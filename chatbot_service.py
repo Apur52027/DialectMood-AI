@@ -18,177 +18,495 @@ from llm import get_llm
 RECENT_WINDOW = 20
 SUMMARY_STEP = 10
 
-# Negative sentiment score threshold
 NEGATIVE_THRESHOLD = 0.40
 
-LOW_MOOD_KEYWORDS = [
-    "মন খারাপ", "মন ভালো নেই", "মন ভাল নেই",
-    "মন ভাল নাই", "মন ভালো নাই",
-    "ভালো লাগে না", "ভাল লাগে না", "ভাল নাগে না",
-    "ভালো লাগছে না", "কিছু ভালো লাগে না",
-    "হতাশ", "একা লাগ", "একাকী", "কষ্ট",
-    "কান্না", "কাঁদ", "ক্লান্ত", "অসহায়",
-    "মূল্যহীন", "ডিপ্রেশন", "বিষণ্ণ",
-    "দুশ্চিন্তা", "চাপ", "হতাশাগ্রস্ত",
-    "depressed", "depression", "hopeless",
-    "lonely", "worthless", "exhausted",
-    "anxious", "sad", "heartbroken",
-    "mon kharap", "mon valo nei",
-    "valo lagche na", "valo lage na",
-    "bhalo lage na", "eka lage"
-]
 
-CRISIS_KEYWORDS = [
-    "আত্মহত্যা", "আত্মহানি",
-    "মরে যেতে চাই", "মরে যেতে ইচ্ছা",
-    "মরতে চাই", "মরে যাই",
-    "বাঁচতে চাই না", "বাঁচতে ইচ্ছা করে না",
-    "বেঁচে থাকতে চাই না",
-    "নিজেকে শেষ করে", "শেষ করে দিতে চাই",
-    "হাত কাটতে চাই", "নিজেকে আঘাত",
-    "সুইসাইড", "সুইসাইডাল",
-    "suicide", "suicidal",
-    "kill myself", "want to die",
-    "end my life", "self harm",
-    "self-harm", "marte chai",
-    "morte chai", "bachte chai na"
+# ============================================================
+# MOOD KEYWORDS
+# ============================================================
+
+LOW_MOOD_KEYWORDS = [
+    "মন খারাপ", "ভালো লাগছে না", "ভালো লাগে না",
+    "কষ্ট হচ্ছে", "অনেক কষ্ট", "একাকী লাগছে",
+    "একা লাগছে", "হতাশ", "হতাশ লাগছে",
+    "কান্না পাচ্ছে", "কাঁদতে ইচ্ছা করছে",
+    "চিন্তা হচ্ছে", "টেনশন হচ্ছে",
+    "কিছু ভালো লাগছে না", "বিরক্ত লাগছে",
+    "মেজাজ খারাপ", "ভেঙে পড়েছি",
+    "ক্লান্ত লাগছে", "কিছু করতে ইচ্ছা করছে না",
+    "মনে শান্তি নেই", "ভালো নেই"
 ]
 
 POSITIVE_KEYWORDS = [
-    "খুব ভালো", "অনেক ভালো", "মন ভালো",
-    "খুশি", "আনন্দ", "সুন্দর দিন",
-    "ভালো লাগছে", "ভালো আছি",
-    "সফল হয়েছি", "সফল হয়েছি",
-    "খুশি হয়েছি", "ভালো খবর",
-    "happy", "excited", "feeling good",
-    "feeling great", "awesome", "wonderful",
-    "i am happy", "i feel good"
+    "ভালো আছি", "অনেক ভালো", "খুশি",
+    "আনন্দ লাগছে", "মজা লাগছে",
+    "সুন্দর লাগছে", "ভালো লাগছে",
+    "সফল হয়েছি", "সফল হলাম",
+    "অনেক খুশি", "দারুণ লাগছে",
+    "আলহামদুলিল্লাহ ভালো"
+]
+
+CRISIS_KEYWORDS = [
+    "আত্মহত্যা করতে চাই",
+    "আত্মহত্যা করব",
+    "নিজেকে মেরে ফেলতে চাই",
+    "নিজেকে শেষ করে দিতে চাই",
+    "বেঁচে থাকতে চাই না",
+    "আর বাঁচতে চাই না",
+    "মরে যেতে চাই",
+    "মরে গেলেই ভালো",
+    "জীবন শেষ করে দিতে চাই",
+    "নিজের ক্ষতি করতে চাই",
+    "নিজেকে আঘাত করতে চাই",
+    "suicide",
+    "kill myself",
+    "end my life",
+    "want to die",
+    "don't want to live",
+    "hurt myself"
 ]
 
 
 # ============================================================
-# TEXT HELPERS
+# ADVICE INTENT KEYWORDS
+# ============================================================
+
+ADVICE_KEYWORDS = [
+    "কি করব", "কী করব", "কী করা উচিত",
+    "পরামর্শ দাও", "পরামর্শ চাই",
+    "সমাধান কী", "সমাধান দাও",
+    "কিভাবে সমাধান করব", "কীভাবে সমাধান করব",
+    "help me", "give me advice",
+    "what should i do", "suggestion",
+    "কোনো উপায় আছে", "উপায় বলো"
+]
+
+
+# ============================================================
+# PROBLEM CATEGORY KEYWORDS
+# ============================================================
+
+PROBLEM_KEYWORDS = {
+    "study": [
+        "পড়াশোনা", "পরীক্ষা", "রেজাল্ট",
+        "পড়তে পারছি না", "পড়াশোনায় মন বসে না",
+        "study", "exam", "result", "academic"
+    ],
+
+    "relationship": [
+        "প্রেম", "ভালোবাসা", "ব্রেকআপ",
+        "সম্পর্ক", "রিলেশন", "প্রেমিকা",
+        "প্রেমিক", "relationship", "breakup",
+        "girlfriend", "boyfriend"
+    ],
+
+    "loneliness": [
+        "একা", "একাকী", "কেউ নেই",
+        "কথা বলার কেউ নেই", "lonely",
+        "alone", "loneliness"
+    ],
+
+    "family": [
+        "পরিবার", "বাবা", "মা",
+        "বাড়িতে সমস্যা", "পরিবারের সমস্যা",
+        "family", "parents"
+    ],
+
+    "career": [
+        "চাকরি", "ক্যারিয়ার", "ভবিষ্যৎ",
+        "বেকার", "ইন্টারভিউ", "career",
+        "job", "unemployed", "future"
+    ],
+
+    "overthinking": [
+        "অতিরিক্ত চিন্তা", "বেশি চিন্তা",
+        "বারবার ভাবি", "overthinking",
+        "অনেক ভাবি", "মাথায় চিন্তা"
+    ],
+
+    "stress": [
+        "চাপ", "মানসিক চাপ", "টেনশন",
+        "স্ট্রেস", "stress", "pressure",
+        "anxiety", "anxious"
+    ],
+
+    "motivation": [
+        "ইচ্ছা করে না", "কিছু করতে চাই না",
+        "অনুপ্রেরণা", "মোটিভেশন",
+        "motivation", "unmotivated"
+    ]
+}
+
+
+# ============================================================
+# DIALECT KEYWORDS
+# Note: Some words overlap across regions.
+# Detection is heuristic, not a scientific dialect classifier.
+# ============================================================
+
+DIALECT_KEYWORDS = {
+
+    "dinajpur": [
+        "ক্যাংকা", "ক্যানে", "আইজক্যা",
+        "কইরবার", "আসচিল", "অইছে",
+        "হইছে", "নাগে", "নাগোছে",
+        "মুই", "মোর", "হামার",
+        "এ্যাংকা", "গরমোত", "চ্যাংড়া",
+        "চেংড়ী", "অংগের", "আইসা"
+    ],
+
+    "rangpur": [
+        "মুই", "মোর", "হামার",
+        "হামরা", "ক্যানে", "কই",
+        "কইরছি", "গেইছে", "যাম",
+        "খাম", "মোক", "তোক",
+        "তোরে", "কিবা", "কুনো",
+        "নাই", "অ্যালা", "আইজ"
+    ],
+
+    "standard": [
+        "আমি", "আমার", "তুমি", "আপনি",
+        "কেন", "কীভাবে", "কিভাবে",
+        "করছি", "করব", "যাচ্ছি",
+        "খাচ্ছি", "ভালো", "খারাপ",
+        "হয়েছে", "হচ্ছে", "আছি"
+    ]
+}
+
+
+# ============================================================
+# BANGLISH MARKERS
+# ============================================================
+
+BANGLISH_MARKERS = [
+    "ami", "amar", "amr", "tumi",
+    "tomar", "apni", "kemon",
+    "valo", "bhalo", "kharap",
+    "mon", "nai", "mone", "ki",
+    "kivabe", "korbo", "korchi",
+    "achi", "acchi", "bujhi",
+    "bujhlam", "kosto", "bhalo",
+    "lagche", "lagena"
+]
+
+
+# ============================================================
+# TEXT UTILITIES
 # ============================================================
 
 def normalize_text(text):
-    return re.sub(r"\s+", " ", str(text).lower()).strip()
+    """Normalize user text for keyword matching."""
+
+    if not text:
+        return ""
+
+    text = str(text).lower().strip()
+    text = re.sub(r"\s+", " ", text)
+
+    return text
 
 
-def contains_keyword(text, keywords):
+def contains_any(text, keywords):
+    """Check whether any keyword exists in text."""
+
     text = normalize_text(text)
-    return any(keyword in text for keyword in keywords)
 
-
-def get_sentiment_from_context(mood_context):
-    """
-    Read sentiment information from Dialect Lab output.
-
-    Expected examples:
-    Sentiment: Negative
-    sentiment_score: 0.25
-    sentiment: positive
-    """
-
-    if not mood_context:
-        return None
-
-    context = normalize_text(mood_context)
-
-    # Find explicit sentiment label
-    match = re.search(
-        r"(?:sentiment|emotion)\s*[:=]\s*(positive|negative|neutral)",
-        context
+    return any(
+        keyword.lower() in text
+        for keyword in keywords
     )
 
-    if match:
-        return match.group(1)
 
-    # Find sentiment score if available
-    match = re.search(
-        r"sentiment_score\s*[:=]\s*(-?\d+(?:\.\d+)?)",
-        context
+def get_message_content(message):
+    """Extract content from history message."""
+
+    if isinstance(message, dict):
+        return str(message.get("content", ""))
+
+    if isinstance(message, (HumanMessage, AIMessage)):
+        return str(message.content)
+
+    return str(message)
+
+
+def get_user_messages(history):
+    """Return only user messages from history."""
+
+    user_messages = []
+
+    for item in history or []:
+
+        if isinstance(item, dict):
+
+            role = item.get("role", "")
+
+            if role in ["user", "human"]:
+                user_messages.append(
+                    str(item.get("content", ""))
+                )
+
+        elif isinstance(item, HumanMessage):
+
+            user_messages.append(
+                str(item.content)
+            )
+
+    return user_messages
+
+
+# ============================================================
+# DIALECT DETECTION
+# ============================================================
+
+def detect_dialect(message, history=None):
+    """
+    Detect:
+    - dinajpur
+    - rangpur
+    - standard
+    - banglish
+    - english
+
+    Uses current message first and recent user messages
+    as supporting context.
+
+    When uncertain, defaults to Standard Bangla.
+    """
+
+    text = normalize_text(message)
+
+    if not text:
+        return "standard"
+
+    bangla_pattern = re.compile(r"[\u0980-\u09FF]")
+
+    has_bangla = bool(bangla_pattern.search(text))
+
+    # --------------------------------------------------------
+    # English / Banglish detection
+    # --------------------------------------------------------
+
+    if not has_bangla:
+
+        words = re.findall(r"[a-zA-Z]+", text)
+
+        if not words:
+            return "standard"
+
+        banglish_score = sum(
+            1 for word in words
+            if word in BANGLISH_MARKERS
+        )
+
+        if banglish_score >= 1:
+            return "banglish"
+
+        return "english"
+
+    # --------------------------------------------------------
+    # Current message dialect scoring
+    # --------------------------------------------------------
+
+    scores = {
+        "dinajpur": 0,
+        "rangpur": 0,
+        "standard": 0
+    }
+
+    for dialect, keywords in DIALECT_KEYWORDS.items():
+
+        for keyword in keywords:
+
+            if keyword in text:
+                scores[dialect] += 1
+
+    # --------------------------------------------------------
+    # Recent user messages provide small supporting evidence
+    # --------------------------------------------------------
+
+    recent_messages = get_user_messages(history)[-6:]
+
+    for old_message in recent_messages:
+
+        old_text = normalize_text(old_message)
+
+        for dialect, keywords in DIALECT_KEYWORDS.items():
+
+            for keyword in keywords:
+
+                if keyword in old_text:
+                    scores[dialect] += 0.25
+
+    # --------------------------------------------------------
+    # Conservative decision
+    # --------------------------------------------------------
+
+    regional_scores = {
+        "dinajpur": scores["dinajpur"],
+        "rangpur": scores["rangpur"]
+    }
+
+    best_regional = max(
+        regional_scores,
+        key=regional_scores.get
     )
 
-    if match:
-        score = float(match.group(1))
+    regional_score = regional_scores[best_regional]
 
-        # This assumes a 0-to-1 negative sentiment score.
-        if score <= NEGATIVE_THRESHOLD:
-            return "negative"
+    other_regional = (
+        "rangpur"
+        if best_regional == "dinajpur"
+        else "dinajpur"
+    )
 
-        return "positive"
+    difference = (
+        regional_score -
+        regional_scores[other_regional]
+    )
 
-    return None
+    if regional_score >= 1 and difference >= 1:
+        return best_regional
+
+    # If no clear regional evidence, use Standard Bangla.
+    return "standard"
+
+
+# ============================================================
+# DIALECT RESPONSE INSTRUCTIONS
+# ============================================================
+
+DIALECT_DIRECTIVES = {
+
+    "dinajpur": """
+The user is communicating in the Dinajpur regional dialect.
+
+Response rules:
+- Reply naturally in Dinajpur-style Bangla when confident.
+- Use familiar regional expressions naturally.
+- Do not exaggerate dialect words.
+- Maintain respectful and friendly language.
+- Avoid using rude or overly informal pronouns.
+- If a regional expression is uncertain, use clear Standard Bangla.
+""",
+
+    "rangpur": """
+The user is communicating in the Rangpur regional dialect.
+
+Response rules:
+- Reply naturally in Rangpur-style Bangla when confident.
+- Use familiar Rangpur regional expressions naturally.
+- Do not exaggerate dialect words.
+- Maintain respectful and friendly language.
+- Avoid using rude or overly informal pronouns.
+- If a regional expression is uncertain, use clear Standard Bangla.
+""",
+
+    "standard": """
+The user is communicating in Standard Bangla.
+
+Response rules:
+- Reply in natural Standard Bangla.
+- Use simple, clear and friendly language.
+- Avoid unnecessary regional dialect expressions.
+""",
+
+    "banglish": """
+The user is communicating in Banglish (Romanized Bangla).
+
+Response rules:
+- Reply in Banglish using English/Roman letters.
+- Keep the language natural and easy to understand.
+- Do not switch to Bengali script unless the user does.
+""",
+
+    "english": """
+The user is communicating in English.
+
+Response rules:
+- Reply in natural, simple English.
+- Do not switch to Bangla unless the user does.
+"""
+}
 
 
 # ============================================================
 # MOOD DETECTION
 # ============================================================
 
-def detect_mood_level(
-    message,
-    recent_user_messages=None,
-    mood_context=""
-):
+def detect_mood_level(message):
     """
+    Detect a basic mood signal from the current message.
+
     Returns:
-        crisis
-        persistent_low
-        depression_related
-        low
-        negative
-        positive
-        normal
+    - crisis
+    - low
+    - positive
+    - neutral
+
+    This is keyword-based and is not a clinical risk assessment.
     """
 
     text = normalize_text(message)
 
-    recent = recent_user_messages or []
-
-    # 1. Crisis detection has highest priority
-    if contains_keyword(text, CRISIS_KEYWORDS):
+    # Crisis signal gets priority.
+    if contains_any(text, CRISIS_KEYWORDS):
         return "crisis"
 
-    # 2. Detect current text mood
-    is_low = contains_keyword(text, LOW_MOOD_KEYWORDS)
-    is_positive = contains_keyword(text, POSITIVE_KEYWORDS)
+    if contains_any(text, LOW_MOOD_KEYWORDS):
+        return "low"
 
-    # 3. Read Dialect Lab sentiment
-    sentiment = get_sentiment_from_context(mood_context)
-
-    # 4. Detect depression-related expressions
-    depression_words = [
-        "ডিপ্রেশন", "বিষণ্ণতা", "হতাশাগ্রস্ত",
-        "depression", "depressed", "hopeless"
-    ]
-
-    depression_related = contains_keyword(
-        text, depression_words
-    )
-
-    # 5. Count recent negative messages
-    recent_low_count = sum(
-        1 for msg in recent[-6:]
-        if contains_keyword(msg, LOW_MOOD_KEYWORDS)
-    )
-
-    # 6. Persistent negative mood
-    if is_low and recent_low_count >= 2:
-        return "persistent_low"
-
-    if depression_related:
-        return "depression_related"
-
-    # 7. Negative sentiment from text or Dialect Lab
-    if is_low or sentiment == "negative":
-        return "low" if is_low else "negative"
-
-    # 8. Positive mood
-    if is_positive or sentiment == "positive":
+    if contains_any(text, POSITIVE_KEYWORDS):
         return "positive"
 
-    # 9. Normal conversation
-    return "normal"
+    return "neutral"
+
+
+# ============================================================
+# ADVICE INTENT DETECTION
+# ============================================================
+
+def wants_advice(message):
+
+    return contains_any(
+        message,
+        ADVICE_KEYWORDS
+    )
+
+
+# ============================================================
+# PROBLEM CATEGORY DETECTION
+# ============================================================
+
+def detect_problem_category(message):
+
+    text = normalize_text(message)
+
+    for category, keywords in PROBLEM_KEYWORDS.items():
+
+        if contains_any(text, keywords):
+            return category
+
+    return "general"
+
+
+# ============================================================
+# MOOD CONTEXT
+# ============================================================
+
+def get_mood_context_message(mood_context):
+
+    if not mood_context:
+        return ""
+
+    return f"""
+Additional mood analysis context from the application:
+
+{mood_context}
+
+Use this information carefully.
+Do not treat sentiment scores as a medical diagnosis.
+Do not assume that a negative sentiment score proves depression.
+"""
 
 
 # ============================================================
@@ -196,205 +514,495 @@ def detect_mood_level(
 # ============================================================
 
 SYSTEM_PROMPT = """
-তুমি DialectMood AI-এর একজন সহানুভূতিশীল Bangla Mood Companion।
+You are a supportive AI Mood Companion for a Bangla dialect-based
+sentiment analysis application.
 
-তুমি বন্ধুর মতো স্বাভাবিকভাবে কথা বলবে।
-তোমার প্রধান কাজ হলো ব্যবহারকারীর অনুভূতি বোঝা,
-তার কথা মন দিয়ে শোনা এবং কথোপকথন চালিয়ে যাওয়া।
+Your purpose is to:
+1. Listen to the user's feelings.
+2. Understand their emotional situation.
+3. Respond with empathy and kindness.
+4. Provide practical and realistic suggestions when appropriate.
+5. Maintain a friendly and non-judgmental conversation.
 
-LANGUAGE:
-- Standard Bangla-তে উত্তর দেবে।
-- ব্যবহারকারী English বা Banglish লিখলে তার ভাষার ধরন অনুসরণ করবে।
-- Dinajpur ও Rangpur dialect বুঝবে।
-- আঞ্চলিক ভাষা নিয়ে মজা করবে না।
+GENERAL RULES:
 
-IMPORTANT CONVERSATION RULES:
+- First understand what the user is saying.
+- Do not judge, blame, shame, or criticize the user.
+- Do not give generic motivational replies every time.
+- Avoid repeating the same advice.
+- Ask one relevant follow-up question when useful.
+- Keep answers conversational and understandable.
+- Do not claim to be a human therapist or doctor.
+- Never diagnose depression or any mental health condition.
+- Never prescribe medication.
+- Do not pretend that sentiment analysis can diagnose a person.
+- Respect the user's language and dialect.
 
-1. ব্যবহারকারীর অনুভূতি আগে বোঝার চেষ্টা করবে।
-2. Negative sentiment দেখলেই depression বলবে না।
-3. ব্যবহারকারী কেন এমন অনুভব করছে তা জানার চেষ্টা করবে।
-4. আগের কথোপকথন থেকে তথ্য পাওয়া গেলে সেটি ব্যবহার করবে।
-5. আগে জানা বিষয় আবার জিজ্ঞাসা করবে না।
-6. একই প্রশ্ন বারবার করবে না।
-7. ব্যবহারকারী বিস্তারিত বললে তার কথার নির্দিষ্ট অংশ ধরে উত্তর দেবে।
-8. একবারে একটি গুরুত্বপূর্ণ প্রশ্ন করবে।
-9. ব্যবহারকারী সমাধান চাইলে ছোট ও বাস্তবসম্মত পরামর্শ দেবে।
-10. ব্যবহারকারী শুধু কথা বলতে চাইলে তাকে মন দিয়ে শুনবে।
+EMOTIONAL SUPPORT:
 
-MOOD-BASED RESPONSE:
+If the user feels sad:
+- Acknowledge their feelings.
+- Let them express themselves.
+- Avoid saying that their problem is insignificant.
+- Suggest small, realistic steps when appropriate.
 
-POSITIVE:
-- আনন্দের সঙ্গে উত্তর দেবে।
-- তার ভালো লাগার কারণ জানতে চাইতে পারো।
-- তার সাফল্য আন্তরিকভাবে উদযাপন করবে।
+IF THE USER ASKS FOR ADVICE:
 
-NEGATIVE:
-- প্রথমে তার অনুভূতিকে স্বীকার করবে।
-- কেন এমন অনুভব হচ্ছে তা জানার চেষ্টা করবে।
-- উদাহরণ: "শুনে খারাপ লাগছে। আজ কি কোনো বিশেষ ঘটনা
-  ঘটেছে, নাকি বেশ কিছুদিন ধরেই এমন লাগছে?"
-- কারণ না জেনে সমাধান দেওয়ার চেষ্টা করবে না।
-
-DEPRESSION-RELATED:
-- ব্যবহারকারীর হতাশা বা দীর্ঘদিনের কষ্টকে গুরুত্ব দেবে।
-- রোগ নির্ণয় করবে না।
-- কষ্ট কতদিন ধরে হচ্ছে এবং দৈনন্দিন জীবনে
-  কী প্রভাব ফেলছে তা ধীরে ধীরে জানতে চাইবে।
-- প্রয়োজন হলে বিশ্বস্ত মানুষ বা মানসিক স্বাস্থ্য
-  বিশেষজ্ঞের সাহায্য নিতে উৎসাহিত করবে।
-
-PERSISTENT LOW MOOD:
-- আগের কথার সঙ্গে বর্তমান অনুভূতি মিলিয়ে উত্তর দেবে।
-- কষ্ট বারবার ফিরে আসার বিষয়টি স্বীকার করবে।
-- সহানুভূতির সঙ্গে একটি প্রশ্ন করবে।
-
-NORMAL:
-- স্বাভাবিক বন্ধুত্বপূর্ণ কথোপকথন চালিয়ে যাবে।
-- অকারণে mood বা depression নিয়ে প্রশ্ন করবে না।
-
-GENERAL STYLE:
-- সাধারণত ৩-৫টি ছোট বাক্য।
-- একসঙ্গে অনেক পরামর্শ দেবে না।
-- সর্বোচ্চ একটি emoji।
-- "সব ঠিক হয়ে যাবে" বা "চিন্তা করো না" বলবে না।
-- বিচার করবে না।
+- Understand the actual problem first.
+- Give specific and practical suggestions.
+- Avoid unrealistic promises.
+- Do not force the user to follow your suggestions.
 
 SAFETY:
-- তুমি ডাক্তার বা therapist নও।
-- কখনো রোগ নির্ণয় করবে না।
-- আত্মহানি বা আত্মহত্যার ইঙ্গিত পেলে
-  নিরাপত্তাকে সর্বোচ্চ গুরুত্ব দেবে।
-- প্রয়োজন হলে সরাসরি জিজ্ঞাসা করবে ব্যবহারকারী
-  এই মুহূর্তে নিজেকে আঘাত করার কথা ভাবছে কি না।
-- কাছের বিশ্বস্ত মানুষকে জানাতে বলবে।
-- তাৎক্ষণিক বিপদে বাংলাদেশের জরুরি নম্বর ৯৯৯
-  অথবা নিকটস্থ হাসপাতালের সাহায্য নিতে বলবে।
+
+If the user mentions suicide, self-harm, or immediate danger:
+- Treat the situation seriously.
+- Do not provide methods or instructions for self-harm.
+- Do not respond with ordinary motivation or jokes.
+- Encourage immediate support from a trusted person.
+- Encourage moving away from anything they could use to hurt themselves.
+- If danger is immediate, encourage emergency services or the nearest hospital.
+- Ask directly whether they are in immediate danger or have already harmed themselves.
 """
 
 
 # ============================================================
-# MOOD DIRECTIVES
+# MOOD IMPROVEMENT PROMPT
 # ============================================================
 
-MOOD_DIRECTIVES = {
+MOOD_IMPROVEMENT_PROMPT = """
+When the user expresses low mood or emotional distress:
 
-    "positive": """
-ব্যবহারকারীর মেজাজ ইতিবাচক।
-আন্তরিকভাবে তার আনন্দে অংশ নাও।
-কথোপকথন স্বাভাবিকভাবে এগিয়ে নাও।
+1. First acknowledge their feelings.
+2. Show empathy without judging them.
+3. Avoid forcing positivity.
+4. Suggest one or two small actions that may help.
+5. Encourage talking to someone they trust.
+6. Ask a gentle question to understand their situation.
+
+Examples of helpful suggestions:
+- Take a short break.
+- Drink some water.
+- Take a slow walk if comfortable.
+- Talk to a trusted friend or family member.
+- Break a difficult task into smaller steps.
+- Take some rest if tired.
+
+Do not present these suggestions as a cure.
+"""
+
+
+# ============================================================
+# PROBLEM-SPECIFIC GUIDANCE
+# ============================================================
+
+PROBLEM_GUIDANCE = {
+
+    "study": """
+For study-related problems:
+- Help the user break tasks into small parts.
+- Suggest a realistic study routine.
+- Avoid creating additional pressure.
+- Encourage short breaks.
 """,
 
-    "negative": """
-ব্যবহারকারীর Dialect Lab অথবা sentiment analysis
-থেকে negative sentiment পাওয়া গেছে।
-
-কিন্তু negative sentiment মানেই depression নয়।
-
-প্রথমে তার অনুভূতিকে স্বীকার করো।
-তারপর কেন এমন অনুভব হচ্ছে তা জানার চেষ্টা করো।
-
-যদি কারণ জানা না থাকে, একটি নরম প্রশ্ন করো।
-এখনই সমাধান বা উপদেশের তালিকা দেবে না।
+    "relationship": """
+For relationship problems:
+- Listen without judging either person.
+- Encourage healthy communication and boundaries.
+- Do not make assumptions about the other person's intentions.
 """,
 
-    "low": """
-ব্যবহারকারী নিজের কথায় মন খারাপ বা কষ্ট প্রকাশ করেছে।
-
-তার অনুভূতিকে গুরুত্ব দাও।
-কেন এমন লাগছে তা জানতে চাও।
-আগের কথার সূত্র থাকলে ব্যবহার করো।
-একটি খোলা প্রশ্ন করো।
+    "loneliness": """
+For loneliness:
+- Acknowledge that loneliness can be difficult.
+- Encourage connecting with a trusted person.
+- Suggest small social interactions when appropriate.
 """,
 
-    "depression_related": """
-ব্যবহারকারীর কথায় হতাশা বা depression-related
-অনুভূতির ইঙ্গিত রয়েছে।
-
-এটি কোনো clinical diagnosis নয়।
-
-তার কষ্ট মন দিয়ে শোনো।
-কতদিন ধরে এমন হচ্ছে এবং কী কারণে হচ্ছে
-তা কোমলভাবে জানার চেষ্টা করো।
-প্রয়োজনে বিশ্বস্ত মানুষের সহায়তা নিতে উৎসাহ দাও।
+    "family": """
+For family problems:
+- Listen carefully.
+- Avoid blaming family members without context.
+- Encourage safe and respectful communication.
 """,
 
-    "persistent_low": """
-ব্যবহারকারী বারবার মন খারাপের কথা বলছে।
-
-আগের কথোপকথনের সঙ্গে বর্তমান অনুভূতির
-সম্পর্ক খুঁজে উত্তর দাও।
-
-কষ্টটি দীর্ঘস্থায়ী হলে বিশ্বস্ত মানুষ বা
-মানসিক স্বাস্থ্য বিশেষজ্ঞের সঙ্গে কথা বলার
-সম্ভাবনা কোমলভাবে উল্লেখ করতে পারো।
+    "career": """
+For career problems:
+- Help identify the actual concern.
+- Break career goals into manageable steps.
+- Avoid promising guaranteed success.
 """,
 
-    "crisis": """
-জরুরি নিরাপত্তা নির্দেশ:
+    "overthinking": """
+For overthinking:
+- Help separate facts from assumptions.
+- Suggest writing down worries.
+- Focus on one manageable next step.
+""",
 
-ব্যবহারকারীর কথায় আত্মহানি বা আত্মহত্যার
-ঝুঁকির ইঙ্গিত রয়েছে।
+    "stress": """
+For stress:
+- Encourage a short break and slow breathing.
+- Help identify the main source of pressure.
+- Suggest realistic ways to reduce workload.
+""",
 
-শান্ত ও আন্তরিকভাবে উত্তর দাও।
-তার নিরাপত্তা সম্পর্কে সরাসরি জিজ্ঞাসা করো।
-সে কি এখন নিজেকে আঘাত করার কথা ভাবছে?
-সে কি এই মুহূর্তে নিরাপদ স্থানে আছে?
+    "motivation": """
+For motivation problems:
+- Avoid blaming the user for low motivation.
+- Suggest starting with a very small task.
+- Recognize small progress.
+""",
 
-এখনই কাছের বিশ্বস্ত কাউকে জানাতে এবং
-একা না থাকতে উৎসাহিত করো।
-
-তাৎক্ষণিক বিপদ হলে বাংলাদেশে ৯৯৯-এ কল
-করতে অথবা নিকটস্থ হাসপাতালে যেতে বলো।
-
-কোনো পদ্ধতি বা আত্মহানির উপায় বলবে না।
+    "general": """
+For general problems:
+- Listen carefully.
+- Ask a clarifying question when necessary.
+- Give practical and empathetic support.
 """
 }
 
 
 # ============================================================
-# CONVERSATION MEMORY
+# CRISIS RESPONSE
 # ============================================================
 
-@lru_cache(maxsize=64)
-def _summarize(transcript: str) -> str:
+def get_crisis_response(dialect="standard"):
+    """
+    Fixed safety response.
 
-    llm = get_llm(temperature=0.2)
+    Crisis situations bypass the normal LLM response so that
+    the application can provide consistent safety guidance.
+    """
 
-    messages = [
-        SystemMessage(
-            content="""
-নিচের কথোপকথনটি ৬-৮ লাইনে সংক্ষেপ করো।
+    responses = {
 
-রাখবে:
-- ব্যবহারকারীর মূল সমস্যা।
-- মন খারাপের সম্ভাব্য কারণ।
-- গুরুত্বপূর্ণ ঘটনা।
-- Positive ও negative mood changes।
-- আগে কী সাহায্য করেছে।
-- কী সাহায্য করেনি।
-- দীর্ঘস্থায়ী কষ্ট বা ঝুঁকির ইঙ্গিত।
+        "standard": """
+তোমার কথাগুলো আমি গুরুত্ব দিয়ে শুনছি। তুমি যে কষ্টের মধ্যে দিয়ে যাচ্ছ,
+সেটা একা সামলাতে হবে না। তোমার নিরাপত্তা এখন সবচেয়ে গুরুত্বপূর্ণ।
 
-ব্যবহারকারীর কথা বানিয়ে লিখবে না।
-শুধু সারাংশ দেবে।
+আমি তোমাকে বিচার করছি না। তোমার সঙ্গে কথা বলতে আমি এখানে আছি।
+
+আমি তোমাকে সরাসরি দুটি বিষয় জিজ্ঞেস করতে চাই:
+
+১. তুমি কি এই মুহূর্তে নিজেকে আঘাত করার বা আত্মহত্যা করার কথা ভাবছ?
+২. তুমি কি ইতিমধ্যে নিজেকে আঘাত করেছ, অথবা এমন কোনো পরিকল্পনা বা উপায় তোমার কাছে আছে?
+
+দয়া করে এখনই একা থেকো না। বিশ্বাসযোগ্য কোনো বন্ধু, পরিবারের সদস্য
+বা কাছের মানুষের সঙ্গে যোগাযোগ করো এবং তাকে তোমার বর্তমান অবস্থার কথা বলো।
+
+নিজেকে আঘাত করার মতো কোনো জিনিস কাছে থাকলে সেগুলো থেকে দূরে সরে যাও
+এবং সম্ভব হলে অন্য কারও সঙ্গে নিরাপদ জায়গায় থাকো।
+
+যদি মনে হয় তুমি এখনই নিজেকে আঘাত করতে পারো, তাহলে বাংলাদেশে জরুরি
+সেবা ৯৯৯-এ কল করো অথবা নিকটস্থ হাসপাতালের জরুরি বিভাগে যাও।
+
+তুমি চাইলে আমাকে বলতে পারো—এই মুহূর্তে তুমি কি নিরাপদে আছ?
+""",
+
+        "dinajpur": """
+তোমার কথাগুলা আমি গুরুত্ব দিয়া শুনছি। তুমি যে কষ্টের মধ্যে আছ,
+সেইটা একা সামলানোর দরকার নাই। তোমার নিরাপত্তা এখন সবচেয়ে জরুরি।
+
+আমি তোমাকে বিচার করতেছি না। তোমার কথা শুনবার জন্য আমি আছি।
+
+আমি তোমাকে দুইটা কথা জিজ্ঞেস করবার চাই:
+
+১. তুমি কি এখন নিজের ক্ষতি করবার বা আত্মহত্যা করবার কথা ভাবতেছ?
+২. তুমি কি ইতিমধ্যে নিজের কোনো ক্ষতি করছ, অথবা এখনই এমন কিছু করবার
+পরিকল্পনা আছে?
+
+দয়া করে এখন একা থেকো না। বিশ্বাসযোগ্য কোনো বন্ধু, পরিবারের মানুষ
+বা কাছের কারও সঙ্গে যোগাযোগ করো।
+
+নিজের ক্ষতি করবার মতো কিছু কাছে থাকলে সেইগুলা থেকে দূরে সরে যাও।
+সম্ভব হলে অন্য কারও সঙ্গে নিরাপদ জায়গায় থাকো।
+
+যদি মনে হয় এখনই নিজের ক্ষতি করবার আশঙ্কা আছে, বাংলাদেশে ৯৯৯-এ কল করো
+অথবা কাছের হাসপাতালের জরুরি বিভাগে যাও।
+
+তুমি কি এই মুহূর্তে নিরাপদে আছ?
+""",
+
+        "rangpur": """
+তোমার কথাগুলা আমি মন দিয়া শুনতেছি। তুমি যে কষ্টের মধ্যে আছ,
+সেইটা একা সামলানো লাগবে না। তোমার নিরাপত্তা এখন সবচেয়ে জরুরি।
+
+আমি তোমাকে বিচার করতেছি না। তোমার কথা শুনবার জন্য আছি।
+
+আমি দুইটা কথা জিজ্ঞেস করি:
+
+১. তুমি কি এখন নিজের ক্ষতি করার বা আত্মহত্যা করার কথা ভাবতেছ?
+২. তুমি কি ইতিমধ্যে নিজের ক্ষতি করছ, অথবা এখনই কিছু করার পরিকল্পনা আছে?
+
+দয়া করে একা থেকো না। বিশ্বাসযোগ্য বন্ধু, পরিবারের মানুষ
+বা কাছের কারও সঙ্গে এখনই কথা কও।
+
+নিজের ক্ষতি করার মতো কিছু কাছে থাকলে সেগুলা থেকে দূরে যাও।
+সম্ভব হলে অন্য কারও সঙ্গে নিরাপদ জায়গায় থাকো।
+
+যদি এখনই নিজের ক্ষতি করার ভয় থাকে, বাংলাদেশে ৯৯৯-এ কল দাও
+অথবা নিকটস্থ হাসপাতালের জরুরি বিভাগে যাও।
+
+তুমি কি এখন নিরাপদে আছ?
+""",
+
+        "banglish": """
+Tomar kothagulo ami seriously nicchi. Tumi je koshtor moddhe
+acho, seta eka handle korte hobe na. Tomar safety ekhon
+sobcheye important.
+
+Ami tomake judge korchi na. Ami tomar kotha shunte ekhane achi.
+
+Ami tomake duita question korte chai:
+
+1. Tumi ki ekhon nijer khoti korar ba suicide korar kotha vabcho?
+2. Tumi ki already nijer kono khoti korecho, ba ekhon kichu
+korar plan ache?
+
+Please ekhon eka theko na. Trusted friend, family member
+ba kacher kono manusher sathe contact koro.
+
+Nijer khoti korar moto kichu kache thakle segulo theke dure sore jao.
+Possible hole onno karo sathe safe place-e thako.
+
+Jodi mone hoy tumi ekhoni nijer khoti korte paro,
+Bangladesh-e 999 call koro othoba nearest hospital-er
+emergency department-e jao.
+
+Tumi ki ekhon safe acho?
+""",
+
+        "english": """
+I'm taking what you're saying seriously. You do not have to
+handle this pain alone. Your safety is the most important thing
+right now.
+
+I'm not here to judge you. I'm here to listen.
+
+Can I ask you two direct questions?
+
+1. Are you thinking about hurting yourself or ending your life right now?
+2. Have you already hurt yourself, or do you have a plan to do so?
+
+Please do not stay alone right now. Contact someone you trust,
+such as a friend, family member, or someone nearby.
+
+Move away from anything you could use to hurt yourself.
+If possible, stay somewhere safe with another person.
+
+If you may act on these thoughts or are in immediate danger,
+call Bangladesh emergency services at 999 or go to the nearest
+hospital emergency department.
+
+Are you safe right now?
 """
-        ),
-        HumanMessage(content=transcript)
-    ]
+    }
 
-    result = llm.invoke(messages).content
-
-    return result
-
-
-def _split_history(history):
-
-    cut = max(
-        0,
-        ((len(history) - RECENT_WINDOW) // SUMMARY_STEP)
-        * SUMMARY_STEP
+    return responses.get(
+        dialect,
+        responses["standard"]
     )
 
-    return history[:cut], history[cut:]
+
+# ============================================================
+# CRISIS CONTEXT CHECK
+# ============================================================
+
+def has_recent_crisis_context(history):
+    """
+    Checks whether recent conversation contained a crisis signal.
+
+    This helps retain safety awareness when the user replies
+    with short messages such as 'yes' or 'no'.
+    """
+
+    recent_user_messages = get_user_messages(history)[-4:]
+
+    return any(
+        contains_any(message, CRISIS_KEYWORDS)
+        for message in recent_user_messages
+    )
+
+
+# ============================================================
+# LLM OUTPUT EXTRACTION
+# ============================================================
+
+def extract_response_content(response):
+
+    content = getattr(response, "content", response)
+
+    if isinstance(content, list):
+
+        content = "".join(
+            item.get("text", "")
+            if isinstance(item, dict)
+            else str(item)
+            for item in content
+        )
+
+    return str(content).strip()
+
+
+# ============================================================
+# CONVERSATION SUMMARIZATION
+# ============================================================
+
+def _split_history(history, chunk_size=SUMMARY_STEP):
+
+    chunks = []
+
+    for index in range(0, len(history), chunk_size):
+
+        chunks.append(
+            history[index:index + chunk_size]
+        )
+
+    return chunks
+
+
+@lru_cache(maxsize=64)
+def _summarize(text):
+    """
+    Summarize older conversation history.
+    Cached to reduce repeated LLM calls.
+    """
+
+    if not text.strip():
+        return ""
+
+    try:
+
+        llm = get_llm(temperature=0.2)
+
+        messages = [
+            SystemMessage(
+                content="""
+You are a conversation summarizer.
+
+Summarize the conversation while preserving:
+- User's important concerns
+- Emotional context
+- Important events
+- Previously discussed problems
+- Suggestions already provided
+- Relevant preferences
+
+Do not invent information.
+Do not diagnose the user.
+Keep the summary concise.
+"""
+            ),
+
+            HumanMessage(
+                content=f"""
+Summarize this conversation:
+
+{text}
+"""
+            )
+        ]
+
+        response = llm.invoke(messages)
+
+        return extract_response_content(response)
+
+    except Exception as error:
+
+        print("Summary error:", error)
+
+        return ""
+
+
+def build_conversation_summary(history):
+    """
+    Summarize old conversation messages while keeping
+    recent messages unchanged.
+    """
+
+    if not history:
+        return ""
+
+    if len(history) <= RECENT_WINDOW:
+        return ""
+
+    old_history = history[:-RECENT_WINDOW]
+
+    chunks = _split_history(old_history)
+
+    summaries = []
+
+    for chunk in chunks:
+
+        conversation_text = ""
+
+        for item in chunk:
+
+            if isinstance(item, dict):
+
+                role = item.get("role", "user")
+                content = item.get("content", "")
+
+            else:
+
+                role = (
+                    "assistant"
+                    if isinstance(item, AIMessage)
+                    else "user"
+                )
+
+                content = get_message_content(item)
+
+            conversation_text += (
+                f"{role}: {content}\n"
+            )
+
+        summary = _summarize(conversation_text)
+
+        if summary:
+            summaries.append(summary)
+
+    return "\n".join(summaries)
+
+
+# ============================================================
+# HISTORY CONVERSION
+# ============================================================
+
+def convert_history_to_messages(history):
+    """
+    Convert application history dictionaries into LangChain messages.
+    """
+
+    messages = []
+
+    for item in history or []:
+
+        if isinstance(item, (HumanMessage, AIMessage)):
+            messages.append(item)
+            continue
+
+        if not isinstance(item, dict):
+            continue
+
+        role = item.get("role", "")
+        content = str(item.get("content", ""))
+
+        if role in ["user", "human"]:
+
+            messages.append(
+                HumanMessage(content=content)
+            )
+
+        elif role in ["assistant", "ai"]:
+
+            messages.append(
+                AIMessage(content=content)
+            )
+
+    return messages
 
 
 # ============================================================
@@ -407,135 +1015,221 @@ def get_chat_response(
     user_name="",
     mood_context=""
 ):
+    """
+    Main chatbot function.
 
-    # ----------------------------------------
-    # 1. Previous user messages
-    # ----------------------------------------
+    Parameters:
+        history: previous chat messages
+        message: current user message
+        user_name: optional user name
+        mood_context: sentiment analysis context
 
-    recent_user_messages = [
-        m["content"]
-        for m in history
-        if m["role"] == "user"
-    ]
+    Returns:
+        AI response as string
+    """
 
-    # ----------------------------------------
-    # 2. Detect mood
-    # ----------------------------------------
+    message = str(message).strip()
 
-    mood_level = detect_mood_level(
+    if not message:
+        return "তোমার কথাটা একটু বিস্তারিত বলবে?"
+
+    # --------------------------------------------------------
+    # 1. Detect dialect
+    # --------------------------------------------------------
+
+    detected_dialect = detect_dialect(
         message=message,
-        recent_user_messages=recent_user_messages,
-        mood_context=mood_context
+        history=history
     )
 
-    # ----------------------------------------
-    # 3. Select LLM temperature
-    # ----------------------------------------
+    # --------------------------------------------------------
+    # 2. Detect mood
+    # --------------------------------------------------------
 
-    temperature = (
-        0.2 if mood_level == "crisis"
-        else 0.5 if mood_level in (
-            "low",
-            "negative",
-            "persistent_low",
-            "depression_related"
+    mood_level = detect_mood_level(message)
+
+    # --------------------------------------------------------
+    # 3. Detect advice intent
+    # --------------------------------------------------------
+
+    advice_requested = wants_advice(message)
+
+    # --------------------------------------------------------
+    # 4. Detect problem category
+    # --------------------------------------------------------
+
+    problem_category = detect_problem_category(message)
+
+    # --------------------------------------------------------
+    # 5. Crisis handling
+    # --------------------------------------------------------
+
+    if mood_level == "crisis":
+
+        return get_crisis_response(
+            detected_dialect
         )
-        else 0.65
-    )
 
-    llm = get_llm(temperature=temperature)
-
-    # ----------------------------------------
-    # 4. Build system prompt
-    # ----------------------------------------
+    # --------------------------------------------------------
+    # 6. Build system prompt
+    # --------------------------------------------------------
 
     system_text = SYSTEM_PROMPT
 
-    if user_name:
-        system_text += f"\n\nব্যবহারকারীর নাম: {user_name}"
+    # Add dialect instruction.
+    system_text += "\n\n"
 
-    # ----------------------------------------
-    # 5. Add Dialect Lab context
-    # ----------------------------------------
-
-    if mood_context:
-
-        system_text += (
-            "\n\nসাম্প্রতিক Dialect Lab Analysis:\n"
-            f"{mood_context}\n"
-            "এটি সহায়ক context হিসেবে ব্যবহার করবে। "
-            "নিজে থেকে নতুন তথ্য বানাবে না।"
-        )
-
-    # ----------------------------------------
-    # 6. Add conversation summary
-    # ----------------------------------------
-
-    older, recent = _split_history(history)
-
-    if older:
-
-        transcript = "\n".join(
-            f'{"User" if m["role"] == "user" else "Assistant"}: '
-            f'{m["content"]}'
-            for m in older
-        )
-
-        try:
-
-            summary = _summarize(transcript)
-
-            system_text += (
-                "\n\nআগের কথোপকথনের সারাংশ:\n"
-                f"{summary}"
-            )
-
-        except Exception as error:
-
-            print("Summary error:", error)
-
-    # ----------------------------------------
-    # 7. Add mood-specific directive
-    # ----------------------------------------
-
-    directive = MOOD_DIRECTIVES.get(
-        mood_level,
-        ""
+    system_text += DIALECT_DIRECTIVES.get(
+        detected_dialect,
+        DIALECT_DIRECTIVES["standard"]
     )
 
-    if directive:
-        system_text += "\n\n" + directive
+    # Add user name if available.
+    if user_name:
 
-    # ----------------------------------------
-    # 8. Build conversation messages
-    # ----------------------------------------
+        system_text += f"""
+
+The user's preferred name is {user_name}.
+Use their name naturally when appropriate.
+Do not overuse it.
+"""
+
+    # Add mood improvement instruction.
+    if mood_level == "low":
+
+        system_text += "\n\n"
+        system_text += MOOD_IMPROVEMENT_PROMPT
+
+    # Add advice instruction.
+    if advice_requested:
+
+        system_text += """
+
+The user appears to be asking for advice.
+Provide specific, practical and empathetic suggestions.
+Do not overwhelm the user with too many steps.
+"""
+
+    # Add problem-specific instruction.
+    system_text += "\n\n"
+
+    system_text += PROBLEM_GUIDANCE.get(
+        problem_category,
+        PROBLEM_GUIDANCE["general"]
+    )
+
+    # Add sentiment context.
+    context_text = get_mood_context_message(
+        mood_context
+    )
+
+    if context_text:
+
+        system_text += "\n\n"
+        system_text += context_text
+
+    # --------------------------------------------------------
+    # 7. Build conversation summary
+    # --------------------------------------------------------
+
+    conversation_summary = build_conversation_summary(
+        history
+    )
+
+    if conversation_summary:
+
+        system_text += f"""
+
+Previous conversation summary:
+
+{conversation_summary}
+
+Use this summary to maintain continuity.
+Do not repeat old advice unnecessarily.
+"""
+
+    # --------------------------------------------------------
+    # 8. Prepare LLM messages
+    # --------------------------------------------------------
 
     messages = [
         SystemMessage(content=system_text)
     ]
 
-    for item in recent:
+    recent_history = (history or [])[-RECENT_WINDOW:]
 
-        if item["role"] == "user":
-
-            messages.append(
-                HumanMessage(content=item["content"])
-            )
-
-        elif item["role"] == "assistant":
-
-            messages.append(
-                AIMessage(content=item["content"])
-            )
-
-    messages.append(
-        HumanMessage(content=message)
+    messages.extend(
+        convert_history_to_messages(recent_history)
     )
 
-    # ----------------------------------------
-    # 9. Generate response
-    # ----------------------------------------
+    # Avoid adding the current user message twice
+    # if it is already the last item in history.
+    already_in_history = False
 
-    response = llm.invoke(messages)
+    if history:
 
-    return response.content
+        last_item = history[-1]
+
+        if isinstance(last_item, dict):
+
+            already_in_history = (
+                last_item.get("role") in ["user", "human"]
+                and str(last_item.get("content", "")).strip()
+                == message
+            )
+
+        elif isinstance(last_item, HumanMessage):
+
+            already_in_history = (
+                str(last_item.content).strip() == message
+            )
+
+    if not already_in_history:
+
+        messages.append(
+            HumanMessage(content=message)
+        )
+
+    # --------------------------------------------------------
+    # 9. Call LLM
+    # --------------------------------------------------------
+
+    try:
+
+        llm = get_llm(temperature=0.65)
+
+        response = llm.invoke(messages)
+
+        return extract_response_content(response)
+
+    except Exception as error:
+
+        print("Chatbot error:", error)
+
+        fallback_responses = {
+
+            "standard":
+                "দুঃখিত, এই মুহূর্তে উত্তর দিতে একটু সমস্যা হচ্ছে। "
+                "তুমি আবার একটু পরে চেষ্টা করবে?",
+
+            "dinajpur":
+                "দুঃখিত, এই মুহূর্তে উত্তর দিতে একটু সমস্যা হইতেছে। "
+                "একটু পরে আবার চেষ্টা করবা?",
+
+            "rangpur":
+                "দুঃখিত, এখন উত্তর দিতে একটু সমস্যা হইতেছে। "
+                "একটু পরে আবার চেষ্টা করবা?",
+
+            "banglish":
+                "Sorry, ekhon response dite problem hocche. "
+                "Ektu pore abar try koro?",
+
+            "english":
+                "Sorry, I'm having trouble responding right now. "
+                "Please try again in a little while."
+        }
+
+        return fallback_responses.get(
+            detected_dialect,
+            fallback_responses["standard"]
+        )
